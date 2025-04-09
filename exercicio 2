@@ -1,0 +1,87 @@
+package barbearia;
+
+public class barbeiroDorminhoco {
+	int nCadeiras[];
+	boolean ocupou  = false;
+	boolean inicio = true;
+	boolean dormir = false;
+	
+	//cada cadeira é representada por uma posicao do vetor, caso esteja 1 é ocupada, 0 não ocupada
+	public barbeiroDorminhoco(int n) {
+		nCadeiras = new int[n];
+		for(int i=0;i<n;i++) {
+			nCadeiras[i] = 0;
+		}
+	}
+	
+	
+	
+	private void barbeiro(){
+		Thread Barbeiro = new Thread(()->{
+			System.out.println("barbeiro iniciando os trabalhos");
+			while(inicio) {
+				if(dormir) {
+					System.out.println("barbeiro dormindo");
+					while(dormir) {
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					for(int i=0;i<nCadeiras.length;i++) {
+						if(nCadeiras[i] == 1) {
+							nCadeiras[i] = 0;
+							try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+		});
+		Barbeiro.start();
+		
+	}
+	
+	private void clientes() {
+		while(inicio) {
+			Thread Clientes = new Thread(()-> {
+				int cont = 0;
+				synchronized (this) {
+	                while (cont < nCadeiras.length) {
+	                    if (nCadeiras[cont] == 0) {
+	                        nCadeiras[cont] = 1;
+	                        System.out.println("cadeira " + cont + " ocupada pela thread " + Thread.currentThread().getName() + " ");
+	                        cont = nCadeiras.length; //sai do loop
+	                        ocupou = true;
+	                        if(dormir) {
+	                        	System.out.println("barbeiro acordando");
+	                        	dormir = false;
+	                        }
+	                    }
+	                    cont = cont + 1;
+	                }
+	                if(ocupou) {
+	                	ocupou = false;
+	                	dormir = true;
+	                }
+	            }
+			});
+			
+			Clientes.start();
+			//aparece um cliente a cada 1 segundo
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	
+	
+}
