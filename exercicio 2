@@ -1,17 +1,31 @@
 package barbearia;
+import java.util.*;
+import java.util.Scanner;
 
 public class barbeiroDorminhoco {
 	int nCadeiras[];
 	boolean ocupou  = false;
+	boolean desocupou = false;
 	boolean inicio = true;
 	boolean dormir = false;
+	int cont = 0;
 	
 	//cada cadeira é representada por uma posicao do vetor, caso esteja 1 é ocupada, 0 não ocupada
-	public barbeiroDorminhoco(int n) {
+	barbeiroDorminhoco(int n) {
 		nCadeiras = new int[n];
 		for(int i=0;i<n;i++) {
 			nCadeiras[i] = 0;
 		}
+		Thread threadParaBarbeiro = new Thread(()->{
+			barbeiro();			
+		});
+		threadParaBarbeiro.start();
+		
+		Thread threadParaClientes = new Thread(()->{
+			clientes();			
+		});
+		threadParaClientes.start();
+		
 	}
 	
 	
@@ -20,18 +34,24 @@ public class barbeiroDorminhoco {
 		Thread Barbeiro = new Thread(()->{
 			System.out.println("barbeiro iniciando os trabalhos");
 			while(inicio) {
-				if(dormir) {
-					System.out.println("barbeiro dormindo");
-					while(dormir) {
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
+				//synchronized (this) {
+					if(dormir) {
+						System.out.println("barbeiro dormindo");
+						while(dormir) {
+							try {
+								Thread.sleep(100);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
 						}
 					}
+				
+				desocupou = false;
 					for(int i=0;i<nCadeiras.length;i++) {
 						if(nCadeiras[i] == 1) {
 							nCadeiras[i] = 0;
+							desocupou = true;
+							System.out.println("cadeira "+i+" desocupada");
 							try {
 								Thread.sleep(1000);
 							} catch (InterruptedException e) {
@@ -39,7 +59,11 @@ public class barbeiroDorminhoco {
 							}
 						}
 					}
-				}
+					
+					if(!desocupou) {//se nao desocupou é porque nao tem ninguem para atender
+						dormir = true;
+					}
+				
 			}
 		});
 		Barbeiro.start();
@@ -49,38 +73,47 @@ public class barbeiroDorminhoco {
 	private void clientes() {
 		while(inicio) {
 			Thread Clientes = new Thread(()-> {
-				int cont = 0;
+				ocupou = false;
 				synchronized (this) {
-	                while (cont < nCadeiras.length) {
-	                    if (nCadeiras[cont] == 0) {
-	                        nCadeiras[cont] = 1;
-	                        System.out.println("cadeira " + cont + " ocupada pela thread " + Thread.currentThread().getName() + " ");
-	                        cont = nCadeiras.length; //sai do loop
+	                for (int i=0;i<nCadeiras.length;i++) {
+	                    if (nCadeiras[i] == 0) {
+	                        nCadeiras[i] = 1;
+	                        System.out.println("cadeira " + i + " ocupada pela " + Thread.currentThread().getName() + " ");
 	                        ocupou = true;
-	                        if(dormir) {
+	                        break; // ocupou a cadeira, ai sai do for
+	                    }
+	                }
+	                        
+	                if(ocupou && dormir) {
 	                        	System.out.println("barbeiro acordando");
 	                        	dormir = false;
 	                        }
-	                    }
-	                    cont = cont + 1;
-	                }
-	                if(ocupou) {
-	                	ocupou = false;
-	                	dormir = true;
-	                }
+	                
 	            }
 			});
 			
 			Clientes.start();
 			//aparece um cliente a cada 1 segundo
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(500);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
+	
+	public static void main(String[] args) {
+		Scanner leitor = new Scanner(System.in);
+		System.out.println("informe a quantidade de cadeiras da barbearia: ");
+		int cadeiras = leitor.nextInt();
+		barbeiroDorminhoco barbearia = new barbeiroDorminhoco(cadeiras);
+		
+		
+	}
+
+
+
+	
 	
 	
 	
