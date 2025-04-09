@@ -1,0 +1,123 @@
+package barbearia;
+
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Scanner;
+
+public class BarbeariaDorminhoco {
+
+    // Barbearia, Controla as cadeiras de espera, a fila de clientes e o estado do barbeiro. Implementa a sincronização entre clientes e barbeiro
+
+    static class Barbearia {
+        private final int cadeirasEspera;
+        private final Queue<Cliente> clientes = new LinkedList<>();
+        private boolean barbeiroDormindo = true;
+
+        public Barbearia(int cadeiras) {
+            this.cadeirasEspera = cadeiras;
+        }
+
+        public synchronized boolean novoCliente(Cliente cliente) {
+            if(clientes.size() < cadeirasEspera) {
+                clientes.offer(cliente);
+                if(barbeiroDormindo) {
+                    System.out.println("Cliente " + cliente.nome + " acordou o barbeiro!");
+                    barbeiroDormindo = false;
+                    notify();
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public synchronized Cliente proximoCliente() throws InterruptedException {
+            while(clientes.isEmpty()) {
+                if (!barbeiroDormindo) {
+                    System.out.println("Barbeiro foi dormir... zZzZ");
+                }
+                barbeiroDormindo = true;
+                wait();
+                barbeiroDormindo = false;
+                System.out.println("Barbeiro acordou!");
+            }
+            return clientes.poll();
+        }
+    }
+
+    // Barbeiro, Representa o profissional que atende os clientes. Dorme quando não há clientes e é acordado quando chega um novo
+    
+    static class Barbeiro extends Thread {
+        private final Barbearia barbearia;
+
+        public Barbeiro(Barbearia barbearia) {
+            this.barbearia = barbearia;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while(true) {
+                    Cliente cliente = barbearia.proximoCliente();
+                    System.out.println("Cortando cabelo de " + cliente.nome);
+                    Thread.sleep(2000);
+                    System.out.println("Terminou o corte de " + cliente.nome);
+                }
+            } catch (InterruptedException e) {
+                System.out.println("Fechou a barbearia!");
+            }
+        }
+    }
+
+    // Cliente, Representa as pessoas que chegam na barbearia. Entram na fila se houver espaço ou vão embora se estiver lotado
+    
+    static class Cliente extends Thread {
+        private final Barbearia barbearia;
+        public final String nome;
+
+        public Cliente(String nome, Barbearia barbearia) {
+            this.nome = nome;
+            this.barbearia = barbearia;
+        }
+
+        @Override
+        public void run() {
+            System.out.println( nome + " chegou");
+            if(barbearia.novoCliente(this)) {
+                System.out.println( nome + " sentou na cadeira de espera");
+            } else {
+                System.out.println( nome + " foi embora (barbearia lotada)");
+            }
+        }
+    }
+
+    // Main, Estabelece Tamanho deo tempo de chegada, numero de cadeiras, Numero de Clientes. Tambem Inicia Barbearia e laço
+
+    public static void main(String[] args) {
+        
+        int tamanhoTempoChegada = 2000;
+
+        Scanner scanner = new Scanner(System.in);
+        
+        System.out.println("BARBEARIA DO DORME");
+        System.out.print("Quantas cadeiras de espera? ");
+        int cadeiras = scanner.nextInt();
+        
+        System.out.print("Quantos clientes virão hoje? ");
+        int totalClientes = scanner.nextInt();
+
+        Barbearia barbearia = new Barbearia(cadeiras);
+        new Barbeiro(barbearia).start();
+
+        Random aleatorio = new Random();
+        for(int i = 1; i <= totalClientes; i++) {
+            new Cliente("Cliente-" + i, barbearia).start();
+            try {
+                Thread.sleep(aleatorio.nextInt(tamanhoTempoChegada));
+            } catch (InterruptedException e) {
+                System.out.println("Erro no sistema!");
+            }
+        }
+        scanner.close();
+    }
+}
