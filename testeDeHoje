@@ -1,0 +1,120 @@
+ package barbearia;
+ import java.util.*;
+
+public class teste2 {
+	String cadeiras[];
+	Thread clientes[];
+	boolean ocupou;
+	int total;
+	boolean dormir;
+	Thread threadParaBarbeiro = new Thread(()->{
+		barbeiro();
+	});
+	
+	Thread threadParaClientes = new Thread(()->{
+		clientes();
+	});
+	
+	public teste2(int nCadeiras, int nclientes) {
+		cadeiras = new String[nCadeiras];
+		clientes = new Thread[nclientes];
+		for(int i=0;i<nCadeiras;i++) {
+			cadeiras[i] = null;
+		}
+		ocupou = false;
+		dormir = true;
+		total = nclientes;
+	}
+	
+	public void iniciarPrograma() {
+		threadParaBarbeiro.start();
+		threadParaClientes.start();		
+	}
+	private void barbeiro() {
+		Thread barbeiro = new Thread(()->{
+			System.out.println("barbeiro iniciando os trabalhos \n");
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			while(true) {
+				for(int i=0;i<cadeiras.length;i++) {
+					synchronized (this) {
+						if(cadeiras[i] != null) {
+							System.out.println("barbeiro atendendo o cliente "+cadeiras[i]);
+							cadeiras[i] = null;
+							try {
+								Thread.sleep(2000);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+							dormir = false;
+						}
+					}
+					if(dormir) {
+						System.out.println("acabou os clientes ou o barbeiro é muito rapido \n Então ele vai dormir");
+						while(dormir) {
+							try {
+								Thread.sleep(500);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+		});
+		barbeiro.start();
+	}
+	
+	private void clientes() {
+		
+		for(int i=0;i<total;i++) {
+			clientes[i] = new Thread(()->{
+				for(int j=0; j< cadeiras.length;j++) {
+					synchronized (this) {
+						ocupou = false;
+						if(cadeiras[j] == null) {
+							cadeiras[j] = Thread.currentThread().getName();
+							ocupou = true;
+							System.out.println("cliente "+Thread.currentThread().getName()+" ocupou a cadeira "+j);
+							break;
+						}
+					}
+				}
+				//caso não ocupe nenhuma cadeira, é porque nao há cadeiras
+				synchronized (this) {
+					if(!ocupou) {
+						System.out.println("cliente "+Thread.currentThread().getName()+" esta saindo, pois nao há cadeiras vagas");
+					}
+				}
+				if(dormir && ocupou) {
+					dormir = false; // acorda o barbeiro
+					System.out.println("cliente "+Thread.currentThread().getName()+"acordou o barbeiro");
+				}
+				
+			});
+			clientes[i].start();
+			
+			try {
+				//um cliente chega a cada 1 segundo
+				clientes[i].sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	public static void main(String[] args) {
+		Scanner leitura = new Scanner(System.in);
+		System.out.println("informe a quantidade de cadeiras: ");
+		int nCadeiras = leitura.nextInt();
+		System.out.println("informe a quantidade de clientes que iram chegar: ");
+		int nClientes = leitura.nextInt();
+		teste2 barbeariaDorminhoco = new teste2(nCadeiras, nClientes);
+		barbeariaDorminhoco.iniciarPrograma();
+		
+	}
+}
+
+
