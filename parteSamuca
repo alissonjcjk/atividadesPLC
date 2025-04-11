@@ -17,7 +17,7 @@ public class BarbeariaDorminhoco {
         public Barbearia(int cadeiras) {
             this.cadeirasEspera = cadeiras;
         }
-
+        // Sincroniza o acesso das threads de clientes às cadeiras e a variável que acorda o barbeiro (barbeiroDormindo)
         public synchronized boolean novoCliente(Cliente cliente) {
             if(clientes.size() < cadeirasEspera) {
                 clientes.offer(cliente);
@@ -30,11 +30,13 @@ public class BarbeariaDorminhoco {
             }
             return false;
         }
-
+        //sincroniza o acesso dos clientes às cadeiras, mas visando o momento que atende todos os clientes ou chega um novo cliente, após o termino
+        //parcial do atendimento e este irá acordar o barbeiro
         public synchronized Cliente proximoCliente() throws InterruptedException {
             while(clientes.isEmpty()) {
                 if (!barbeiroDormindo) {
                     System.out.println("Barbeiro foi dormir... zZzZ");
+               
                 }
                 barbeiroDormindo = true;
                 wait();
@@ -58,6 +60,7 @@ public class BarbeariaDorminhoco {
         public void run() {
             try {
                 while(true) {
+                	//cliente é atendido em 2 segundos
                     Cliente cliente = barbearia.proximoCliente();
                     System.out.println("Cortando cabelo de " + cliente.nome);
                     Thread.sleep(2000);
@@ -83,6 +86,7 @@ public class BarbeariaDorminhoco {
         @Override
         public void run() {
             System.out.println( nome + " chegou");
+            //adiciona o novo cliente recebido
             if(barbearia.novoCliente(this)) {
                 System.out.println( nome + " sentou na cadeira de espera");
             } else {
@@ -91,7 +95,7 @@ public class BarbeariaDorminhoco {
         }
     }
 
-    // Main, Estabelece Tamanho deo tempo de chegada, numero de cadeiras, Numero de Clientes. Tambem Inicia Barbearia e laço
+    // Main, Estabelece Tamanho de tempo de chegada, numero de cadeiras, Numero de Clientes. Também Inicia Barbearia e laço
 
     public static void main(String[] args) {
         
